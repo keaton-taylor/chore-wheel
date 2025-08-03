@@ -101,6 +101,20 @@ function displayAssignments(assignments) {
   });
 }
 
+function isAssignedFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('assigned') === 'true';
+}
+
+function updateURLWithAssigned() {
+  const newURL = `${window.location.origin}${window.location.pathname}?assigned=true`;
+  window.history.replaceState({}, '', newURL);
+}
+
+function clearURLAssigned() {
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
 function rotateChores() {
   if (isLocked()) {
     document.getElementById("lockNotice").classList.remove("hidden");
@@ -109,9 +123,12 @@ function rotateChores() {
 
   const todayAssignments = assignChores();
   
-  // Store assignments and current date
+  // Store assignments and current date in localStorage
   localStorage.setItem("currentAssignments", JSON.stringify(todayAssignments));
   localStorage.setItem("assignmentDate", getCurrentDateCST());
+  
+  // Update URL to indicate chores are assigned
+  updateURLWithAssigned();
   
   // Display the assignments
   displayAssignments(todayAssignments);
@@ -130,15 +147,29 @@ function loadStoredAssignments() {
   if (shouldResetAssignments()) {
     localStorage.removeItem("currentAssignments");
     localStorage.removeItem("assignmentDate");
+    clearURLAssigned();
     displayAssignments({});
     return;
   }
 
-  // Load and display stored assignments
+  // Check if URL indicates chores are assigned
+  if (isAssignedFromURL()) {
+    // Load assignments from localStorage
+    const storedAssignments = localStorage.getItem("currentAssignments");
+    if (storedAssignments) {
+      const assignments = JSON.parse(storedAssignments);
+      displayAssignments(assignments);
+      return;
+    }
+  }
+
+  // Load and display stored assignments from localStorage
   const storedAssignments = localStorage.getItem("currentAssignments");
   if (storedAssignments) {
     const assignments = JSON.parse(storedAssignments);
     displayAssignments(assignments);
+    // Update URL to indicate chores are assigned
+    updateURLWithAssigned();
   } else {
     displayAssignments({});
   }
