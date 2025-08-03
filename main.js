@@ -35,6 +35,40 @@ function getAvailableChores(chores, lastAssignments) {
   return chores.filter(chore => !(chore in lastAssignments));
 }
 
+function getDateSeed() {
+  const currentDate = getCurrentDateCST();
+  // Create a simple hash from the date string
+  let hash = 0;
+  for (let i = 0; i < currentDate.length; i++) {
+    const char = currentDate.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
+}
+
+function assignChoresDeterministic() {
+  const seed = getDateSeed();
+  const assignments = {};
+  
+  // Use the seed to create a pseudo-random but deterministic sequence
+  let availableChores = [...fullChores];
+  const rotatingKids = kids.filter(k => k !== "Hattie");
+  
+  // Assign chores to rotating kids
+  rotatingKids.forEach((kid, idx) => {
+    const choreIndex = (seed + idx * 7) % availableChores.length;
+    assignments[kid] = availableChores[choreIndex];
+    availableChores.splice(choreIndex, 1);
+  });
+  
+  // Assign Hattie's chore
+  const hattieIndex = (seed + 100) % hattieChores.length;
+  assignments["Hattie"] = hattieChores[hattieIndex];
+  
+  return assignments;
+}
+
 function assignChores() {
   let assignments = {};
   let availableChores = getAvailableChores(fullChores, lastAssignments);
@@ -71,14 +105,6 @@ function isLocked() {
 
   const diff = nowCST - lastCST;
   return diff < 24 * 60 * 60 * 1000;
-}
-
-function shouldResetAssignments() {
-  const storedDate = localStorage.getItem("assignmentDate");
-  const currentDate = getCurrentDateCST();
-  
-  // If no stored date or date has changed, reset is needed
-  return !storedDate || storedDate !== currentDate;
 }
 
 function displayAssignments(assignments) {
@@ -121,11 +147,10 @@ function rotateChores() {
     return;
   }
 
-  const todayAssignments = assignChores();
+  const todayAssignments = assignChoresDeterministic();
   
-  // Store assignments and current date in localStorage
-  localStorage.setItem("currentAssignments", JSON.stringify(todayAssignments));
-  localStorage.setItem("assignmentDate", getCurrentDateCST());
+  // Store that chores have been assigned for today
+  localStorage.setItem("lastChoreRun", new Date().toISOString());
   
   // Update URL to indicate chores are assigned
   updateURLWithAssigned();
@@ -133,42 +158,21 @@ function rotateChores() {
   // Display the assignments
   displayAssignments(todayAssignments);
 
-  lastAssignments = {};
-  Object.entries(todayAssignments).forEach(([kid, chore]) => {
-    if (kid !== "Hattie") lastAssignments[chore] = kid;
-  });
-
-  localStorage.setItem("lastChoreRun", new Date().toISOString());
   document.getElementById("lockNotice").classList.add("hidden");
 }
 
 function loadStoredAssignments() {
-  // Check if we need to reset assignments (new day)
-  if (shouldResetAssignments()) {
-    localStorage.removeItem("currentAssignments");
-    localStorage.removeItem("assignmentDate");
-    clearURLAssigned();
-    displayAssignments({});
+  // Check if URL indicates chores are assigned
+  if (isAssignedFromURL()) {
+    const todayAssignments = assignChoresDeterministic();
+    displayAssignments(todayAssignments);
     return;
   }
 
-  // Check if URL indicates chores are assigned
-  if (isAssignedFromURL()) {
-    // Load assignments from localStorage
-    const storedAssignments = localStorage.getItem("currentAssignments");
-    if (storedAssignments) {
-      const assignments = JSON.parse(storedAssignments);
-      displayAssignments(assignments);
-      return;
-    }
-  }
-
-  // Load and display stored assignments from localStorage
-  const storedAssignments = localStorage.getItem("currentAssignments");
-  if (storedAssignments) {
-    const assignments = JSON.parse(storedAssignments);
-    displayAssignments(assignments);
-    // Update URL to indicate chores are assigned
+  // Check if chores were assigned today (using lock mechanism)
+  if (isLocked()) {
+    const todayAssignments = assignChoresDeterministic();
+    displayAssignments(todayAssignments);
     updateURLWithAssigned();
   } else {
     displayAssignments({});

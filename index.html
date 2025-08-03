@@ -5,16 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chore Wheel</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="main.js" defer></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-  <div class="max-w-xl w-full bg-white shadow-lg rounded-xl p-6">
-    <h1 class="text-2xl font-bold mb-4 text-center">Chore Wheel</h1>
-    <ul id="choreList" class="space-y-2"></ul>
-    <div class="text-center mt-6">
-      <button id="rotateButton" onclick="rotateChores()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Assign Chores</button>
-      <p id="lockNotice" class="text-sm text-red-600 mt-2 hidden">Chores can only be reassigned once every 24 hours.</p>
-    </div>
-  </div>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
