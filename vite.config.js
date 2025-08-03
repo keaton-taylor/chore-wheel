@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/chore-wheel/', // This should match your GitHub repo name
+  base: process.env.NODE_ENV === 'production' ? '/chore-wheel/' : '/',
   build: {
     outDir: 'dist',
   },
