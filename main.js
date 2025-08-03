@@ -51,6 +51,13 @@ function assignChores() {
   return assignments;
 }
 
+function getCurrentDateCST() {
+  const now = new Date();
+  const offset = 6 * 60; // CST offset in minutes
+  const cstDate = new Date(now.getTime() - offset * 60000);
+  return cstDate.toDateString();
+}
+
 function isLocked() {
   const lastRun = localStorage.getItem("lastChoreRun");
   if (!lastRun) return false;
@@ -66,6 +73,34 @@ function isLocked() {
   return diff < 24 * 60 * 60 * 1000;
 }
 
+function shouldResetAssignments() {
+  const storedDate = localStorage.getItem("assignmentDate");
+  const currentDate = getCurrentDateCST();
+  
+  // If no stored date or date has changed, reset is needed
+  return !storedDate || storedDate !== currentDate;
+}
+
+function displayAssignments(assignments) {
+  const choreList = document.getElementById("choreList");
+  choreList.innerHTML = "";
+
+  if (!assignments || Object.keys(assignments).length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "No chores assigned yet. Click 'Assign Chores' to get started!";
+    li.className = "p-2 bg-gray-50 rounded shadow text-gray-600 text-center";
+    choreList.appendChild(li);
+    return;
+  }
+
+  Object.entries(assignments).forEach(([kid, chore]) => {
+    const li = document.createElement("li");
+    li.textContent = `${kid}: ${chore}`;
+    li.className = "p-2 bg-gray-50 rounded shadow";
+    choreList.appendChild(li);
+  });
+}
+
 function rotateChores() {
   if (isLocked()) {
     document.getElementById("lockNotice").classList.remove("hidden");
@@ -73,15 +108,13 @@ function rotateChores() {
   }
 
   const todayAssignments = assignChores();
-  const choreList = document.getElementById("choreList");
-  choreList.innerHTML = "";
-
-  Object.entries(todayAssignments).forEach(([kid, chore]) => {
-    const li = document.createElement("li");
-    li.textContent = `${kid}: ${chore}`;
-    li.className = "p-2 bg-gray-50 rounded shadow";
-    choreList.appendChild(li);
-  });
+  
+  // Store assignments and current date
+  localStorage.setItem("currentAssignments", JSON.stringify(todayAssignments));
+  localStorage.setItem("assignmentDate", getCurrentDateCST());
+  
+  // Display the assignments
+  displayAssignments(todayAssignments);
 
   lastAssignments = {};
   Object.entries(todayAssignments).forEach(([kid, chore]) => {
@@ -92,7 +125,30 @@ function rotateChores() {
   document.getElementById("lockNotice").classList.add("hidden");
 }
 
+function loadStoredAssignments() {
+  // Check if we need to reset assignments (new day)
+  if (shouldResetAssignments()) {
+    localStorage.removeItem("currentAssignments");
+    localStorage.removeItem("assignmentDate");
+    displayAssignments({});
+    return;
+  }
+
+  // Load and display stored assignments
+  const storedAssignments = localStorage.getItem("currentAssignments");
+  if (storedAssignments) {
+    const assignments = JSON.parse(storedAssignments);
+    displayAssignments(assignments);
+  } else {
+    displayAssignments({});
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  // Load any existing assignments for today
+  loadStoredAssignments();
+  
+  // Check lock status
   if (isLocked()) {
     document.getElementById("lockNotice").classList.remove("hidden");
   }
