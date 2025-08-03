@@ -159,6 +159,14 @@ function App() {
     }
   }, [])
 
+  // Determine button text based on current state
+  const getButtonText = () => {
+    if (Object.keys(assignments).length > 0) {
+      return "View Chores"
+    }
+    return "Assign Chores"
+  }
+
   return (
     <div className="bg-gray-100 min-h-screen flex items-center justify-center p-4">
       <div className="max-w-xl w-full bg-white shadow-lg rounded-xl p-6">
@@ -188,7 +196,7 @@ function App() {
                 : 'bg-blue-500 hover:bg-blue-600'
             }`}
           >
-            Assign Chores
+            {getButtonText()}
           </button>
           
           {isLocked && (
