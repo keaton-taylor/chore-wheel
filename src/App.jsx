@@ -29,10 +29,33 @@ const hattieChores = [
   "Use handheld vacuum on couch cushions"
 ]
 
+// Update Banner Component
+const UpdateBanner = ({ onReload }) => {
+  return (
+    <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white p-3 z-50 shadow-lg">
+      <div className="max-w-xl mx-auto flex items-center justify-between">
+        <div className="flex items-center">
+          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          </svg>
+          <span className="text-sm font-medium">A new version is available!</span>
+        </div>
+        <button
+          onClick={onReload}
+          className="bg-white text-blue-600 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100 transition-colors"
+        >
+          Reload
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [assignments, setAssignments] = useState({})
   const [isLocked, setIsLocked] = useState(false)
   const [lastAssignments, setLastAssignments] = useState({})
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false)
 
   // Get current date in CST
   const getCurrentDateCST = () => {
@@ -121,6 +144,16 @@ function App() {
     window.history.replaceState({}, '', `${window.location.pathname}?assigned=true`)
   }
 
+  // Handle app reload
+  const handleReload = () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.active.postMessage({ type: 'SKIP_WAITING' })
+      })
+    }
+    window.location.reload()
+  }
+
   // Clean up old assignments
   const cleanupOldAssignments = () => {
     const keys = Object.keys(localStorage)
@@ -157,6 +190,17 @@ function App() {
         setAssignments(newAssignments)
       }
     }
+
+    // Listen for service worker updates
+    const handleUpdateAvailable = () => {
+      setShowUpdateBanner(true)
+    }
+
+    window.addEventListener('sw-update-available', handleUpdateAvailable)
+
+    return () => {
+      window.removeEventListener('sw-update-available', handleUpdateAvailable)
+    }
   }, [])
 
   // Determine button text based on current state
@@ -169,7 +213,9 @@ function App() {
 
   return (
     <div className="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-xl w-full bg-white shadow-lg rounded-xl p-6">
+      {showUpdateBanner && <UpdateBanner onReload={handleReload} />}
+      
+      <div className={`max-w-xl w-full bg-white shadow-lg rounded-xl p-6 ${showUpdateBanner ? 'mt-16' : ''}`}>
         <h1 className="text-2xl font-bold mb-4 text-center">Chore Wheel</h1>
         
         <div className="space-y-2 mb-6">

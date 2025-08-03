@@ -6,5 +6,12 @@ export default defineConfig({
   base: process.env.NODE_ENV === 'production' ? '/chore-wheel/' : '/',
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        sw: 'public/sw.js'
+      }
+    }
   },
+  publicDir: 'public'
 }) 
