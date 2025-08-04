@@ -70,7 +70,7 @@ function App() {
     return `choreAssignments_${getCurrentDateCST()}`
   }
 
-  // Check if chores are locked (24-hour rule)
+  // Check if chores are locked (reset at midnight CST)
   const checkLockStatus = () => {
     const lastRun = localStorage.getItem("lastChoreRun")
     if (!lastRun) return false
@@ -80,9 +80,12 @@ function App() {
     const offset = 6 * 60 // CST offset in minutes
     const lastCST = new Date(lastDate.getTime() - offset * 60000)
     const nowCST = new Date(now.getTime() - offset * 60000)
-    const diff = nowCST - lastCST
     
-    return diff < 24 * 60 * 60 * 1000
+    // Check if it's the same day in CST
+    const lastDateStr = lastCST.toDateString()
+    const nowDateStr = nowCST.toDateString()
+    
+    return lastDateStr === nowDateStr
   }
 
   // Load assignments from localStorage
